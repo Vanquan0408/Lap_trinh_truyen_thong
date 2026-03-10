@@ -1,0 +1,5 @@
+quan: quan nè nhựt 
+quan: hello nhựt 
+nhut: nhựt chào quân nhé 
+quan: hello nhut
+nhut: nhut chao quan
