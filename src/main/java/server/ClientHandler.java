@@ -60,16 +60,40 @@ public class ClientHandler extends Thread {
 
                         Connection conn = DatabaseConnection.getConnection();
 
-                        String check = "SELECT * FROM users WHERE username=?";
-                        PreparedStatement psCheck = conn.prepareStatement(check);
-                        psCheck.setString(1, username);
-                        ResultSet rsCheck = psCheck.executeQuery();
+                        // ===== CHECK USERNAME =====
+                        String checkUser = "SELECT * FROM users WHERE username=?";
+                        PreparedStatement psUser = conn.prepareStatement(checkUser);
+                        psUser.setString(1, username);
+                        ResultSet rsUser = psUser.executeQuery();
 
-                        if (rsCheck.next()) {
+                        if (rsUser.next()) {
                             dos.writeUTF("USER_EXIST");
                             continue;
                         }
 
+                        // ===== CHECK EMAIL =====
+                        String checkEmail = "SELECT * FROM users WHERE email=?";
+                        PreparedStatement psEmail = conn.prepareStatement(checkEmail);
+                        psEmail.setString(1, email);
+                        ResultSet rsEmail = psEmail.executeQuery();
+
+                        if (rsEmail.next()) {
+                            dos.writeUTF("EMAIL_EXIST");
+                            continue;
+                        }
+
+                        // ===== CHECK PHONE =====
+                        String checkPhone = "SELECT * FROM users WHERE phone=?";
+                        PreparedStatement psPhone = conn.prepareStatement(checkPhone);
+                        psPhone.setString(1, phone);
+                        ResultSet rsPhone = psPhone.executeQuery();
+
+                        if (rsPhone.next()) {
+                            dos.writeUTF("PHONE_EXIST");
+                            continue;
+                        }
+
+                        // ===== INSERT USER =====
                         String sql = "INSERT INTO users(username,password_hash,full_name,email,phone,gender,birth_date,is_active) VALUES (?,?,?,?,?,?,?,1)";
 
                         PreparedStatement ps = conn.prepareStatement(sql);
@@ -81,6 +105,7 @@ public class ClientHandler extends Thread {
                         ps.setString(5, phone);
                         ps.setString(6, gender);
                         ps.setString(7, birth);
+
                         ps.executeUpdate();
 
                         dos.writeUTF("REGISTER_SUCCESS");
@@ -91,7 +116,6 @@ public class ClientHandler extends Thread {
                         dos.writeUTF("REGISTER_FAIL");
 
                     }
-
                 } // ================= LOGIN =================
                 else if (msg.startsWith("LOGIN")) {
 
