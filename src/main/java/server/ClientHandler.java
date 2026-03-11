@@ -1,5 +1,8 @@
 package server;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.net.Socket;
 import java.io.*;
 import java.util.HashMap;
@@ -11,9 +14,6 @@ public class ClientHandler extends Thread {
     DataOutputStream dos;
 
     String username;
-
-    // lưu tài khoản
-    static HashMap<String, String> users = new HashMap<>();
 
     public ClientHandler(Socket socket) {
 
@@ -43,32 +43,87 @@ public class ClientHandler extends Thread {
 
                     String[] data = msg.split("\\|");
 
-                    String u = data[1];
-                    String p = data[2];
-
-                    if (users.containsKey(u)) {
-
+                    if (data.length < 8) {
                         dos.writeUTF("REGISTER_FAIL");
+                        continue;
+                    }
 
-                    } else {
+                    String username = data[1];
+                    String password = PasswordUtil.hashPassword(data[2]);
+                    String fullname = data[3];
+                    String email = data[4];
+                    String phone = data[5];
+                    String gender = data[6];
+                    String birth = data[7];
 
-                        users.put(u, p);
+                    try {
+
+                        Connection conn = DatabaseConnection.getConnection();
+
+                        String check = "SELECT * FROM users WHERE username=?";
+                        PreparedStatement psCheck = conn.prepareStatement(check);
+                        psCheck.setString(1, username);
+                        ResultSet rsCheck = psCheck.executeQuery();
+
+                        if (rsCheck.next()) {
+                            dos.writeUTF("USER_EXIST");
+                            continue;
+                        }
+
+                        String sql = "INSERT INTO users(username,password_hash,full_name,email,phone,gender,birth_date,is_active) VALUES (?,?,?,?,?,?,?,1)";
+
+                        PreparedStatement ps = conn.prepareStatement(sql);
+
+                        ps.setString(1, username);
+                        ps.setString(2, password);
+                        ps.setString(3, fullname);
+                        ps.setString(4, email);
+                        ps.setString(5, phone);
+                        ps.setString(6, gender);
+                        ps.setString(7, birth);
+                        ps.executeUpdate();
 
                         dos.writeUTF("REGISTER_SUCCESS");
 
+                    } catch (Exception ex) {
+
+                        ex.printStackTrace();
+                        dos.writeUTF("REGISTER_FAIL");
+
                     }
 
-                }
-
-                // ================= LOGIN =================
+                } // ================= LOGIN =================
                 else if (msg.startsWith("LOGIN")) {
 
                     String[] data = msg.split("\\|");
 
                     String u = data[1];
-                    String p = data[2];
+                    String p = PasswordUtil.hashPassword(data[2]);
 
-                    if (users.containsKey(u) && users.get(u).equals(p)) {
+                    boolean loginOK = false;
+
+                    try {
+
+                        Connection conn = DatabaseConnection.getConnection();
+
+                        String sql = "SELECT * FROM users WHERE username=? AND password_hash=?";
+
+                        PreparedStatement ps = conn.prepareStatement(sql);
+
+                        ps.setString(1, u);
+                        ps.setString(2, p);
+
+                        ResultSet rs = ps.executeQuery();
+
+                        if (rs.next()) {
+                            loginOK = true;
+                        }
+
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+
+                    if (loginOK) {
 
                         username = u;
 
@@ -88,9 +143,7 @@ public class ClientHandler extends Thread {
 
                     }
 
-                }
-
-                // ================= CHAT CHUNG =================
+                } // ================= CHAT CHUNG =================
                 else if (msg.startsWith("MSG")) {
 
                     String text = msg.substring(4);
@@ -101,10 +154,7 @@ public class ClientHandler extends Thread {
 
                     saveHistory(send);
 
-                }
-
-                // ================= CHAT RIÊNG =================
-// ================= CHAT RIÊNG =================
+                } // ================= CHAT RIÊNG =================
                 else if (msg.startsWith("PRIVATE")) {
                     String[] data = msg.split("\\|", 3); // Split thành 3 phần: PRIVATE | người_nhận | nội_dung
 
@@ -205,8 +255,9 @@ public class ClientHandler extends Thread {
 
             File file = new File("chat.txt");
 
-            if (!file.exists())
+            if (!file.exists()) {
                 return;
+            }
 
             BufferedReader br = new BufferedReader(new FileReader(file));
 

@@ -1,2 +1,4 @@
 nhi: hi hai bạn 
 nhut: hi
+Nhựt: hello quân
+Nhựt: hello
