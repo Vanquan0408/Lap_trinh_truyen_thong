@@ -178,6 +178,39 @@ public class ClientHandler extends Thread {
 
                     saveHistory(send);
 
+                } // ================= GỬI FILE RIÊNG =================
+                else if (msg.startsWith("PRIVATE_FILE|")) {
+
+                    String[] parts = msg.split("\\|");
+
+                    String toUser = parts[1];
+                    String fileName = parts[2];
+
+                    int fileSize = dis.readInt();
+
+                    byte[] buffer = new byte[fileSize];
+                    dis.readFully(buffer);
+
+                    ClientHandler target = Server.clients.get(toUser);
+
+                    if (target != null) {
+
+                        target.dos.writeUTF("PRIVATE_FILE_FROM|" + username + "|" + fileName);
+
+                        target.dos.writeInt(fileSize);
+
+                        target.dos.write(buffer);
+
+                        target.dos.flush();
+
+                        String log = username + " đã gửi file: " + fileName;
+                        broadcast(log);
+                    } else {
+
+                        dos.writeUTF("HỆ THỐNG: Người dùng không online.");
+
+                    }
+
                 } // ================= GỬI FILE CHO TẤT CẢ =================
                 else if (msg.startsWith("FILE|")) {
 
@@ -213,30 +246,8 @@ public class ClientHandler extends Thread {
 
                     }
 
-                } // ================= GỬI FILE RIÊNG =================
-                else if (msg.startsWith("PRIVATE_FILE")) {
-
-                    String[] parts = msg.split("\\|");
-                    String toUser = parts[1];
-                    String fileName = parts[2];
-
-                    int fileSize = dis.readInt();
-
-                    byte[] buffer = new byte[fileSize];
-                    dis.readFully(buffer);
-
-                    ClientHandler target = Server.clients.get(toUser);
-
-                    if (target != null) {
-
-                        target.dos.writeUTF("FILE_FROM|" + username + "|" + fileName);
-                        target.dos.writeInt(fileSize);
-                        target.dos.write(buffer);
-                        target.dos.flush();
-                    }
-
                 } // ================= CHAT RIÊNG =================
-                else if (msg.startsWith("PRIVATE")) {
+                else if (msg.startsWith("PRIVATE|")) {
 
                     String[] data = msg.split("\\|", 3);
 
@@ -248,6 +259,7 @@ public class ClientHandler extends Thread {
                     if (target != null) {
 
                         target.dos.writeUTF("PRIVATE_FROM|" + username + "|" + text);
+                        target.dos.flush();
 
                     } else {
 
