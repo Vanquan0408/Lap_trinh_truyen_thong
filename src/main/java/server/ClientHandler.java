@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.net.Socket;
 import java.io.*;
-import java.util.HashMap;
+import server.MessageDB;
 
 public class ClientHandler extends Thread {
 
@@ -37,6 +37,7 @@ public class ClientHandler extends Thread {
             while (true) {
 
                 String msg = dis.readUTF();
+System.out.println("Server nhận: " + msg);
 
                 // ================= REGISTER =================
                 if (msg.startsWith("REGISTER")) {
@@ -159,8 +160,7 @@ public class ClientHandler extends Thread {
 
                         sendUserList();
 
-                        loadHistory();
-
+                        //loadHistory();
                     } else {
 
                         dos.writeUTF("LOGIN_FAIL");
@@ -176,7 +176,8 @@ public class ClientHandler extends Thread {
 
                     broadcast(send);
 
-                    saveHistory(send);
+                    // lưu vào database
+                    MessageDB.saveMessage(username, "ALL", text);
 
                 } // ================= GỬI FILE RIÊNG =================
                 else if (msg.startsWith("PRIVATE_FILE|")) {
@@ -254,6 +255,9 @@ public class ClientHandler extends Thread {
                     String toUser = data[1];
                     String text = data[2];
 
+                    // lưu database trước
+                    MessageDB.saveMessage(username, toUser, text);
+
                     ClientHandler target = Server.clients.get(toUser);
 
                     if (target != null) {
@@ -324,50 +328,6 @@ public class ClientHandler extends Thread {
                 c.dos.writeUTF(list);
 
             }
-
-        } catch (Exception e) {
-        }
-
-    }
-
-    // ================= LƯU LỊCH SỬ CHAT =================
-    void saveHistory(String msg) {
-
-        try {
-
-            FileWriter fw = new FileWriter("chat.txt", true);
-
-            fw.write(msg + "\n");
-
-            fw.close();
-
-        } catch (Exception e) {
-        }
-
-    }
-
-    // ================= LOAD LỊCH SỬ =================
-    void loadHistory() {
-
-        try {
-
-            File file = new File("chat.txt");
-
-            if (!file.exists()) {
-                return;
-            }
-
-            BufferedReader br = new BufferedReader(new FileReader(file));
-
-            String line;
-
-            while ((line = br.readLine()) != null) {
-
-                dos.writeUTF(line);
-
-            }
-
-            br.close();
 
         } catch (Exception e) {
         }
