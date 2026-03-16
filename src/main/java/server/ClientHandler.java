@@ -37,7 +37,7 @@ public class ClientHandler extends Thread {
             while (true) {
 
                 String msg = dis.readUTF();
-System.out.println("Server nhận: " + msg);
+                System.out.println("Server nhận: " + msg);
 
                 // ================= REGISTER =================
                 if (msg.startsWith("REGISTER")) {
@@ -169,16 +169,12 @@ System.out.println("Server nhận: " + msg);
 
                 } // ================= CHAT CHUNG =================
                 else if (msg.startsWith("MSG")) {
-
-                    String text = msg.substring(4);
-
+                    String text = msg.substring(4).trim();
                     String send = username + ": " + text;
-
                     broadcast(send);
 
-                    // lưu vào database
+                    // === THAY ĐOẠN NÀY ===
                     MessageDB.saveMessage(username, "ALL", text);
-
                 } // ================= GỬI FILE RIÊNG =================
                 else if (msg.startsWith("PRIVATE_FILE|")) {
 
@@ -249,11 +245,9 @@ System.out.println("Server nhận: " + msg);
 
                 } // ================= CHAT RIÊNG =================
                 else if (msg.startsWith("PRIVATE|")) {
-
                     String[] data = msg.split("\\|", 3);
-
-                    String toUser = data[1];
-                    String text = data[2];
+                    String toUser = data[1].trim();
+                    String text = data[2].trim();
 
                     // lưu database trước
                     MessageDB.saveMessage(username, toUser, text);
@@ -270,6 +264,37 @@ System.out.println("Server nhận: " + msg);
                         dos.writeUTF("HỆ THỐNG: Người dùng " + toUser + " hiện không online.");
 
                     }
+                } else if (msg.startsWith("LOAD_HISTORY|")) {
+
+                    String toUser = msg.split("\\|")[1];
+
+                    try {
+
+                        Integer senderId = MessageDB.getUserIdByUsername(username);
+                        Integer receiverId = MessageDB.getUserIdByUsername(toUser);
+
+                        ResultSet rs = MessageDB.getPrivateChatHistory(senderId, receiverId);
+
+                        while (rs.next()) {
+
+                            int senderDB = rs.getInt("sender_id");
+                            String content = rs.getString("content");
+
+                            String senderName;
+
+                            if (senderDB == senderId) {
+                                senderName = username;
+                            } else {
+                                senderName = toUser;
+                            }
+
+                            dos.writeUTF("HISTORY|" + senderName + "|" + content);
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+
                 }
 
             }
