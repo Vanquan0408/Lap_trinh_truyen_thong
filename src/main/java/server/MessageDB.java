@@ -121,4 +121,91 @@ public class MessageDB {
 
         return null;
     }
+    // ================= LƯU TIN NHÓM =================
+
+    public static void saveGroupMessage(int senderId, int groupId, String content) {
+
+        String sql = "INSERT INTO messages(sender_id, group_id, content, sent_at) VALUES (?, ?, ?, NOW())";
+
+        try (Connection conn = DatabaseConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, senderId);
+            ps.setInt(2, groupId);
+            ps.setString(3, content);
+
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+// ================= LỊCH SỬ NHÓM =================
+
+    public static ResultSet getGroupChatHistory(int groupId) {
+
+        try {
+
+            Connection conn = DatabaseConnection.getConnection();
+
+            String sql = "SELECT * FROM messages WHERE group_id=? ORDER BY sent_at ASC";
+
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setInt(1, groupId);
+
+            return ps.executeQuery();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+// ================= LẤY USERNAME =================
+
+    public static String getUsernameById(int userId) {
+
+        String sql = "SELECT username FROM users WHERE user_id=?";
+
+        try (Connection conn = DatabaseConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, userId);
+
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getString("username");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return "Unknown";
+    }
+// ================= LẤY MEMBER NHÓM =================
+
+    public static java.util.List<String> getUsersInGroup(int groupId) {
+
+        java.util.List<String> list = new java.util.ArrayList<>();
+
+        String sql = "SELECT u.username FROM group_members gm "
+                + "JOIN users u ON gm.user_id = u.user_id "
+                + "WHERE gm.group_id=?";
+
+        try (Connection conn = DatabaseConnection.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, groupId);
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                list.add(rs.getString("username"));
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return list;
+    }
 }
