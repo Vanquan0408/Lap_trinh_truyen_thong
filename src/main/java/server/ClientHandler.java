@@ -264,41 +264,39 @@ public class ClientHandler extends Thread {
                         dos.writeUTF("HỆ THỐNG: Người dùng " + toUser + " hiện không online.");
 
                     }
-                }
-                // ================= CHAT NHÓM =================
-else if (msg.startsWith("GROUP|")) {
+                } // ================= CHAT NHÓM =================
+                else if (msg.startsWith("GROUP|")) {
 
-    String[] data = msg.split("\\|", 3);
+                    String[] data = msg.split("\\|", 3);
 
-    String groupId = data[1];
-    String text = data[2];
+                    String groupId = data[1];
+                    String text = data[2];
 
-    try {
+                    try {
 
-        // Lấy user_id
-        int senderId = MessageDB.getUserIdByUsername(username);
+                        // Lấy user_id
+                        int senderId = MessageDB.getUserIdByUsername(username);
 
-        // ===== LƯU DATABASE =====
-        MessageDB.saveGroupMessage(senderId, Integer.parseInt(groupId), text);
+                        // ===== LƯU DATABASE =====
+                        MessageDB.saveGroupMessage(senderId, Integer.parseInt(groupId), text);
 
-        // ===== LẤY DANH SÁCH MEMBER 1 LẦN =====
-var members = MessageDB.getUsersInGroup(Integer.parseInt(groupId));
+                        // ===== LẤY DANH SÁCH MEMBER 1 LẦN =====
+                        var members = MessageDB.getUsersInGroup(Integer.parseInt(groupId));
 
-for (String member : members) {
+                        for (String member : members) {
 
-    ClientHandler c = Server.clients.get(member);
+                            ClientHandler c = Server.clients.get(member);
 
-    if (c != null) {
-        c.dos.writeUTF("GROUP_FROM|" + groupId + "|" + username + "|" + text);
-        c.dos.flush();
-    }
-}
+                            if (c != null) {
+                                c.dos.writeUTF("GROUP_FROM|" + groupId + "|" + username + "|" + text);
+                                c.dos.flush();
+                            }
+                        }
 
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-}
-                else if (msg.startsWith("LOAD_HISTORY|")) {
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else if (msg.startsWith("LOAD_HISTORY|")) {
 
                     String toUser = msg.split("\\|")[1];
 
@@ -329,30 +327,29 @@ for (String member : members) {
                         e.printStackTrace();
                     }
 
+                } // ================= LOAD LỊCH SỬ NHÓM =================
+                else if (msg.startsWith("LOAD_GROUP_HISTORY|")) {
+
+                    String groupId = msg.split("\\|")[1];
+
+                    try {
+
+                        ResultSet rs = MessageDB.getGroupChatHistory(Integer.parseInt(groupId));
+
+                        while (rs.next()) {
+
+                            int senderId = rs.getInt("sender_id");
+                            String content = rs.getString("content");
+
+                            String senderName = MessageDB.getUsernameById(senderId);
+
+                            dos.writeUTF("GROUP_HISTORY|" + senderName + "|" + content);
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
-                // ================= LOAD LỊCH SỬ NHÓM =================
-else if (msg.startsWith("LOAD_GROUP_HISTORY|")) {
-
-    String groupId = msg.split("\\|")[1];
-
-    try {
-
-        ResultSet rs = MessageDB.getGroupChatHistory(Integer.parseInt(groupId));
-
-        while (rs.next()) {
-
-            int senderId = rs.getInt("sender_id");
-            String content = rs.getString("content");
-
-            String senderName = MessageDB.getUsernameById(senderId);
-
-            dos.writeUTF("GROUP_HISTORY|" + senderName + "|" + content);
-        }
-
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-}
 
             }
 
